@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Cloración - Dosificación de Agua</title>
+    <style>
+        /* CSS para un diseño limpio y adaptable (similar a la imagen) */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #F8F9FA;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .calculator-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            padding: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .header h2 {
+            color: #4A4A4A;
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #CED4DA;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #CED4DA;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+        .radio-group label:hover,
+        .radio-group input[type="radio"]:checked + span {
+            background-color: #F0F8FF; /* Color sutil al seleccionar */
+            border-color: #007BFF;
+        }
+        .radio-group span {
+            flex-grow: 1;
+        }
+        .button-calc {
+            width: 100%;
+            background-color: #8C223C; /* Color similar al de la imagen */
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button-calc:hover {
+            background-color: #6A1A2C;
+        }
+        #resultado {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #E9ECEF;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #007BFF;
+            text-align: center;
+            display: none; /* Oculto por defecto */
+        }
+        .ppm-info {
+            font-size: 0.8em;
+            color: #6C757D;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-container">
+    <div class="header">
+        <h2>Calculadora de Cloración</h2>
+        <p style="font-size: 0.9em; color: #555;">DIRECCIÓN DE PROTECCIÓN CONTRA RIESGOS SANITARIOS</p>
+    </div>
+
+    <div class="input-group">
+        <label for="volumenAgua">Volumen de Agua (Litros)</label>
+        <input type="number" id="volumenAgua" placeholder="Ej: 1000" min="1">
+    </div>
+
+    <div class="input-group">
+        <label for="cloroRequerido">Cloro Requerido (PPM)</label>
+        <input type="number" id="cloroRequerido" placeholder="Ej: 0.5" min="0.1" step="0.1">
+        <p class="ppm-info">Rango recomendado para consumo: 0.2 - 1.5 PPM</p>
+    </div>
+
+    <label>Tipo de Cloro a Utilizar</label>
+    <div class="radio-group">
+        <label>
+            <input type="radio" name="concentracion" value="6" checked>
+            <span>Hipoclorito de Sodio (6%) <small>(Líquido)</small></span>
+        </label>
+        <label>
+            <input type="radio" name="concentracion" value="13">
+            <span>Hipoclorito de Sodio (13%) <small>(Líquido)</small></span>
+        </label>
+        <label>
+            <input type="radio" name="concentracion" value="65">
+            <span>Hipoclorito de Calcio (65%) <small>(Granulado/Sólido)</small></span>
+        </label>
+    </div>
+
+    <button class="button-calc" onclick="calcularDosificacion()">CALCULAR DOSIFICACIÓN</button>
+
+    <div id="resultado">
+        </div>
+</div>
+
+<script>
+    function calcularDosificacion() {
+        // 1. Obtener los valores de los campos
+        const volumen = parseFloat(document.getElementById('volumenAgua').value);
+        const ppmRequerido = parseFloat(document.getElementById('cloroRequerido').value);
+        
+        // Obtener la concentración seleccionada
+        const concentracionElement = document.querySelector('input[name="concentracion"]:checked');
+        
+        if (!concentracionElement) {
+            alert('Por favor, seleccione un tipo de cloro.');
+            return;
+        }
+
+        const concentracion = parseFloat(concentracionElement.value);
+        const esSolido = concentracion === 65; // Determina si es Hipoclorito de Calcio (Sólido)
+
+        // 2. Validar las entradas
+        if (isNaN(volumen) || volumen <= 0) {
+            alert('Ingrese un Volumen de Agua válido (mayor a 0).');
+            return;
+        }
+        if (isNaN(ppmRequerido) || ppmRequerido <= 0) {
+            alert('Ingrese un Cloro Requerido (PPM) válido (mayor a 0).');
+            return;
+        }
+
+        // 3. Aplicar la Fórmula de Dosificación
+        // Fórmula general para obtener la cantidad de producto:
+        // Cantidad (ml o g) = (Volumen_agua * PPM_requerido * 100) / (Concentración_producto * 1000)
+        
+        const numerador = volumen * ppmRequerido * 100;
+        const denominador = concentracion * 1000;
+        
+        const dosis = numerador / denominador;
+
+        // 4. Formatear el resultado
+        const dosisFormateada = dosis.toFixed(2); // Redondeo a dos decimales
+        
+        let unidad = esSolido ? 'gramos (g)' : 'mililitros (ml)';
+        
+        const nombreProducto = concentracionElement.nextElementSibling.textContent.split('(')[0].trim();
+
+        const mensajeResultado = `
+            Para <strong>${volumen} Litros</strong> de agua y obtener <strong>${ppmRequerido} PPM</strong>,
+            debe añadir <strong>${dosisFormateada} ${unidad}</strong> de 
+            <strong>${nombreProducto}</strong>.
+        `;
+
+        // 5. Mostrar el resultado en la interfaz
+        const resultadoDiv = document.getElementById('resultado');
+        resultadoDiv.innerHTML = mensajeResultado;
+        resultadoDiv.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
