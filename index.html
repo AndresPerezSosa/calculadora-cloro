@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Cloración - Dosificación de Agua</title>
+    <title>Calculadora de Cloración - Volumen y Dosificación</title>
     <style>
         /* CSS para un diseño limpio y adaptable (similar a la imagen) */
         body {
@@ -42,7 +42,7 @@
             font-weight: bold;
             color: #333;
         }
-        input[type="number"] {
+        input[type="number"], select {
             width: 100%;
             padding: 12px 15px;
             border: 1px solid #CED4DA;
@@ -66,7 +66,7 @@
         }
         .radio-group label:hover,
         .radio-group input[type="radio"]:checked + span {
-            background-color: #F0F8FF; /* Color sutil al seleccionar */
+            background-color: #F0F8FF;
             border-color: #007BFF;
         }
         .radio-group span {
@@ -74,7 +74,7 @@
         }
         .button-calc {
             width: 100%;
-            background-color: #8C223C; /* Color similar al de la imagen */
+            background-color: #8C223C;
             color: white;
             padding: 15px;
             border: none;
@@ -87,7 +87,7 @@
         .button-calc:hover {
             background-color: #6A1A2C;
         }
-        #resultado {
+        #resultado, #volumenCalculadoDiv {
             margin-top: 25px;
             padding: 20px;
             border-radius: 8px;
@@ -96,12 +96,27 @@
             font-weight: bold;
             color: #007BFF;
             text-align: center;
-            display: none; /* Oculto por defecto */
+            /* display: none; */
+        }
+        #volumenCalculadoDiv {
+            margin-bottom: 20px;
+            background-color: #D4EDDA; /* Verde claro para destacar el volumen */
+            color: #155724;
+            display: none;
         }
         .ppm-info {
             font-size: 0.8em;
             color: #6C757D;
             margin-top: 5px;
+        }
+        .volume-inputs {
+            border: 1px solid #007BFF;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .volume-inputs label {
+            font-weight: normal;
         }
     </style>
 </head>
@@ -114,9 +129,42 @@
     </div>
 
     <div class="input-group">
-        <label for="volumenAgua">Volumen de Agua (Litros)</label>
-        <input type="number" id="volumenAgua" placeholder="Ej: 1000" min="1">
+        <label for="metodoVolumen">Método para obtener el Volumen de Agua (Litros)</label>
+        <select id="metodoVolumen" onchange="mostrarCamposVolumen()">
+            <option value="manual">Ingresar Volumen Manualmente</option>
+            <option value="cilindro">Calcular Volumen - Pozo/Cilindro</option>
+            <option value="rectangular">Calcular Volumen - Tanque Rectangular</option>
+        </select>
     </div>
+
+    <div class="input-group" id="inputManualVolumen">
+        <label for="volumenAguaManual">Volumen de Agua (Litros)</label>
+        <input type="number" id="volumenAguaManual" placeholder="Ej: 1000" min="1">
+    </div>
+
+    <div class="input-group volume-inputs" id="inputCilindro" style="display:none;">
+        <p style="font-weight: bold; margin-top: 0;">Datos del Pozo (Cilindro)</p>
+        <label for="diametro">Diámetro (metros)</label>
+        <input type="number" id="diametro" placeholder="Ej: 1.2" step="0.1" min="0.1">
+        <label for="alturaAgua">Altura del Nivel de Agua (metros)</label>
+        <input type="number" id="alturaAgua" placeholder="Ej: 5.0" step="0.1" min="0.1">
+    </div>
+
+    <div class="input-group volume-inputs" id="inputRectangular" style="display:none;">
+        <p style="font-weight: bold; margin-top: 0;">Datos del Tanque (Rectangular)</p>
+        <label for="largo">Largo (metros)</label>
+        <input type="number" id="largo" placeholder="Ej: 2.0" step="0.1" min="0.1">
+        <label for="ancho">Ancho (metros)</label>
+        <input type="number" id="ancho" placeholder="Ej: 1.5" step="0.1" min="0.1">
+        <label for="profundidad">Profundidad del Agua (metros)</label>
+        <input type="number" id="profundidad" placeholder="Ej: 1.0" step="0.1" min="0.1">
+    </div>
+
+    <div id="volumenCalculadoDiv" style="display:none;">
+        <p>Volumen Calculado: <span id="volumenCalculado"></span> Litros</p>
+    </div>
+    
+    <hr style="margin: 25px 0;">
 
     <div class="input-group">
         <label for="cloroRequerido">Cloro Requerido (PPM)</label>
@@ -140,41 +188,106 @@
         </label>
     </div>
 
-    <button class="button-calc" onclick="calcularDosificacion()">CALCULAR DOSIFICACIÓN</button>
+    <button class="button-calc" onclick="calcularDosificacionCompleta()">CALCULAR DOSIFICACIÓN</button>
 
     <div id="resultado">
         </div>
 </div>
 
 <script>
-    function calcularDosificacion() {
-        // 1. Obtener los valores de los campos
-        const volumen = parseFloat(document.getElementById('volumenAgua').value);
-        const ppmRequerido = parseFloat(document.getElementById('cloroRequerido').value);
+    function mostrarCamposVolumen() {
+        const metodo = document.getElementById('metodoVolumen').value;
+        document.getElementById('inputManualVolumen').style.display = 'none';
+        document.getElementById('inputCilindro').style.display = 'none';
+        document.getElementById('inputRectangular').style.display = 'none';
+        document.getElementById('volumenCalculadoDiv').style.display = 'none';
+
+        if (metodo === 'manual') {
+            document.getElementById('inputManualVolumen').style.display = 'block';
+        } else if (metodo === 'cilindro') {
+            document.getElementById('inputCilindro').style.display = 'block';
+        } else if (metodo === 'rectangular') {
+            document.getElementById('inputRectangular').style.display = 'block';
+        }
+    }
+
+    function calcularVolumen() {
+        const metodo = document.getElementById('metodoVolumen').value;
+        let volumen = 0;
+        let esValido = true;
+
+        if (metodo === 'manual') {
+            volumen = parseFloat(document.getElementById('volumenAguaManual').value);
+            if (isNaN(volumen) || volumen <= 0) {
+                alert('Ingrese un Volumen de Agua válido (mayor a 0).');
+                esValido = false;
+            }
+        } 
+        else if (metodo === 'cilindro') {
+            const diametro = parseFloat(document.getElementById('diametro').value);
+            const altura = parseFloat(document.getElementById('alturaAgua').value);
+            
+            if (isNaN(diametro) || diametro <= 0 || isNaN(altura) || altura <= 0) {
+                alert('Ingrese Diámetro y Altura de Agua válidos para el Pozo.');
+                esValido = false;
+            } else {
+                const radio = diametro / 2;
+                // V = π * r² * h (m³) * 1000 (L/m³)
+                volumen = Math.PI * Math.pow(radio, 2) * altura * 1000;
+            }
+        } 
+        else if (metodo === 'rectangular') {
+            const largo = parseFloat(document.getElementById('largo').value);
+            const ancho = parseFloat(document.getElementById('ancho').value);
+            const profundidad = parseFloat(document.getElementById('profundidad').value);
+            
+            if (isNaN(largo) || largo <= 0 || isNaN(ancho) || ancho <= 0 || isNaN(profundidad) || profundidad <= 0) {
+                alert('Ingrese Largo, Ancho y Profundidad del Agua válidos para el Tanque.');
+                esValido = false;
+            } else {
+                // V = Largo * Ancho * Profundidad (m³) * 1000 (L/m³)
+                volumen = largo * ancho * profundidad * 1000;
+            }
+        }
         
-        // Obtener la concentración seleccionada
+        if (esValido && volumen > 0) {
+            document.getElementById('volumenCalculado').textContent = volumen.toFixed(2);
+            document.getElementById('volumenCalculadoDiv').style.display = 'block';
+            return volumen;
+        } else {
+            document.getElementById('volumenCalculadoDiv').style.display = 'none';
+            return null; // Retorna null si hay error
+        }
+    }
+
+    function calcularDosificacionCompleta() {
+        // 1. Obtener y/o Calcular el Volumen
+        const volumen = calcularVolumen();
+        if (volumen === null) {
+            // Si calcularVolumen retorna null, ya se mostró la alerta.
+            document.getElementById('resultado').style.display = 'none';
+            return; 
+        }
+
+        // 2. Obtener los valores de los demás campos
+        const ppmRequerido = parseFloat(document.getElementById('cloroRequerido').value);
         const concentracionElement = document.querySelector('input[name="concentracion"]:checked');
         
+        if (isNaN(ppmRequerido) || ppmRequerido <= 0) {
+            alert('Ingrese un Cloro Requerido (PPM) válido (mayor a 0).');
+            document.getElementById('resultado').style.display = 'none';
+            return;
+        }
         if (!concentracionElement) {
             alert('Por favor, seleccione un tipo de cloro.');
+            document.getElementById('resultado').style.display = 'none';
             return;
         }
 
         const concentracion = parseFloat(concentracionElement.value);
-        const esSolido = concentracion === 65; // Determina si es Hipoclorito de Calcio (Sólido)
-
-        // 2. Validar las entradas
-        if (isNaN(volumen) || volumen <= 0) {
-            alert('Ingrese un Volumen de Agua válido (mayor a 0).');
-            return;
-        }
-        if (isNaN(ppmRequerido) || ppmRequerido <= 0) {
-            alert('Ingrese un Cloro Requerido (PPM) válido (mayor a 0).');
-            return;
-        }
+        const esSolido = concentracion === 65; 
 
         // 3. Aplicar la Fórmula de Dosificación
-        // Fórmula general para obtener la cantidad de producto:
         // Cantidad (ml o g) = (Volumen_agua * PPM_requerido * 100) / (Concentración_producto * 1000)
         
         const numerador = volumen * ppmRequerido * 100;
@@ -182,24 +295,25 @@
         
         const dosis = numerador / denominador;
 
-        // 4. Formatear el resultado
-        const dosisFormateada = dosis.toFixed(2); // Redondeo a dos decimales
-        
+        // 4. Formatear y Mostrar el resultado
+        const dosisFormateada = dosis.toFixed(2); 
         let unidad = esSolido ? 'gramos (g)' : 'mililitros (ml)';
         
         const nombreProducto = concentracionElement.nextElementSibling.textContent.split('(')[0].trim();
 
         const mensajeResultado = `
-            Para <strong>${volumen} Litros</strong> de agua y obtener <strong>${ppmRequerido} PPM</strong>,
+            Para <strong>${volumen.toFixed(2)} Litros</strong> de agua y obtener <strong>${ppmRequerido} PPM</strong>,
             debe añadir <strong>${dosisFormateada} ${unidad}</strong> de 
             <strong>${nombreProducto}</strong>.
         `;
 
-        // 5. Mostrar el resultado en la interfaz
         const resultadoDiv = document.getElementById('resultado');
         resultadoDiv.innerHTML = mensajeResultado;
         resultadoDiv.style.display = 'block';
     }
+
+    // Inicializa el estado de los campos de volumen al cargar
+    window.onload = mostrarCamposVolumen;
 </script>
 
 </body>
